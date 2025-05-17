@@ -1,1 +1,39 @@
+# Bytecode and cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv*/
 .env
+
+# Editor/IDE settings
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python packages
+*.egg-info/
+dist/
+build/
+
+# Logs and runtime
+*.log
+*.pid
+
+# Render deployment
+render.yaml
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# dotenv files (credentials/secrets)
+.env
+
+# Misc
+*.bak
+*.tmp

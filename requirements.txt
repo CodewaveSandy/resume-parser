@@ -1,3 +1,10 @@
 flask
 python-dotenv
 gunicorn
+pyresparser==1.0.6
+nltk==3.8.1
+spacy==2.3.9
+pdfminer.six==20201018
+docx2txt
+numpy==1.21.6
+pandas==1.3.5
