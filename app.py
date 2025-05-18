@@ -1,23 +1,16 @@
 from flask import Flask, jsonify, request
 from dotenv import load_dotenv
-from pyresparser import ResumeParser
-import traceback
 import os
+import re
+import textract
+import traceback
 
-import nltk
-
-nltk.download("stopwords")
-nltk.download("punkt")
-nltk.download("averaged_perceptron_tagger")
-nltk.download("wordnet")
-nltk.download("maxent_ne_chunker")
-nltk.download("words")
-
-load_dotenv()  # ✅ Load variables from .env into os.environ
+load_dotenv()
 
 app = Flask(__name__)
 API_KEY = os.environ.get("API_KEY")
-port = int(os.environ.get("PORT", 3002)) 
+port = int(os.environ.get("PORT", 3002))
+
 
 @app.before_request
 def check_api_key():
@@ -25,10 +18,38 @@ def check_api_key():
     if key != API_KEY:
         return jsonify({"error": "Unauthorized"}), 401
 
+
+def extract_text(file_path):
+    return textract.process(file_path).decode("utf-8", errors="ignore")
+
+
+def extract_personal_info(text):
+    def extract_name(text):
+        lines = text.splitlines()
+        lines = [line.strip() for line in lines if line.strip()]
+        for line in lines[:5]:
+            if "@" not in line and not re.search(r"\d", line) and len(line.split()) <= 4:
+                return line
+        return None
+
+    def extract_email(text):
+        match = re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b', text)
+        return match.group(0) if match else None
+
+    def extract_phone(text):
+        match = re.search(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', text)
+        return match.group(0) if match else None
+
+    return {
+        "name": extract_name(text),
+        "email": extract_email(text),
+        "phone": extract_phone(text)
+    }
+
+
 @app.route("/parse", methods=["POST"])
 def parse_resume():
     if 'file' not in request.files:
-        print("❌ No file in request")
         return jsonify({"error": "No file uploaded"}), 400
 
     file = request.files['file']
@@ -36,26 +57,21 @@ def parse_resume():
     temp_path = f"/tmp/{filename}"
     file.save(temp_path)
 
-    print(f"📄 Received file: {filename}")
-    print(f"🛠️  Saved temporarily at: {temp_path}")
-
     try:
-        data = ResumeParser(temp_path).get_extracted_data()
-        print("✅ Parsing complete:")
-        print(data)
+        text = extract_text(temp_path)
+        data = extract_personal_info(text)
+
         return jsonify({
-            "message": "Resume parsed successfully",
+            "message": "Personal info extracted successfully",
             "data": data
         })
     except Exception as e:
-        print("🔥 Exception occurred during parsing:")
-        traceback.print_exc()  # Full stack trace in logs
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
-            print(f"🧹 Temp file deleted: {temp_path}")
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=port)
-

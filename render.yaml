@@ -1,8 +1,11 @@
 services:
   - type: web
-    name: resume-parser
-    runtime: docker
+    name: resume-parser-python
+    runtime: python
     plan: free
-    dockerfilePath: ./Dockerfile
-    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 2 -b 0.0.0.0:$PORT app:app
+    envVars:
+      - key: API_KEY
+        sync: false
 
